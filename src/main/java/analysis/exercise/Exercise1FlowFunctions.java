@@ -45,13 +45,13 @@ public class Exercise1FlowFunctions extends TaintAnalysisFlowFunctions {
          * in the input set, which is why *val* is just one dataflow fact, and not an
          * entire set.
          */
-        return val -> {
+        return fact -> {
             // Our set of dataflow facts.
             Set<DataFlowFact> out = Sets.newHashSet();
 
             // If *val* was in the set before, it should be brought back from the caller
             // context.
-            out.add(val);
+            out.add(fact);
 
             // Here we want to cover the case of calling *getParameter*. In this case, the
             // caller context should add the variable on the left.
@@ -64,14 +64,14 @@ public class Exercise1FlowFunctions extends TaintAnalysisFlowFunctions {
             }
 
             // *toString* is like direct assignment.
-            modelStringOperations(val, out, call);
+            modelStringOperations(fact, out, call);
 
-            prettyPrint(call, val);
+            prettyPrint(call, fact);
 
             // Here we catch any errors.
             if (call.toString().contains("executeQuery")) {
                 Value arg = call.getInvokeExpr().getArg(0);
-                if (val.getVariable().equals(arg)) {
+                if (fact.getVariable().equals(arg)) {
                     reporter.reportVulnerability();
                 }
             }
@@ -105,13 +105,27 @@ public class Exercise1FlowFunctions extends TaintAnalysisFlowFunctions {
     @Override
     public FlowFunction<DataFlowFact> getNormalFlowFunction(final Stmt curr, Stmt succ) {
         return fact -> {
-            System.out.println("Inside of getNormalFlowFunction");
-            // prettyPrint(curr, fact);
-            // prettyPrint(succ, fact);
             Set<DataFlowFact> out = Sets.newHashSet();
+
+            // Start by progogating a fact already in the set to the next set.
             out.add(fact);
 
-            // TODO: Implement Exercise 1b) here
+            // Is this an assignment statement?
+            if (curr instanceof JAssignStmt) {
+                JAssignStmt assignStmt = (JAssignStmt) curr;
+
+                if (assignStmt.getLeftOp() instanceof Local && assignStmt.getRightOp() instanceof Local) {
+                    DataFlowFact left = new DataFlowFact((Local) (assignStmt.getLeftOp()));
+                    DataFlowFact right = new DataFlowFact((Local) (assignStmt.getRightOp()));
+
+                    // Assignment should destroy any taint.
+                    out.remove(left);
+                    // But if the right value is tainted, then we can add the left back to the set.
+                    if (fact.equals(right)) {
+                        out.add(left);
+                    }
+                }
+            }
 
             return out;
         };
