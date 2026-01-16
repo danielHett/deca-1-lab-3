@@ -15,7 +15,6 @@ import sootup.core.jimple.common.stmt.JAssignStmt;
 import sootup.core.jimple.common.stmt.Stmt;
 import sootup.core.model.SootMethod;
 import sootup.core.signatures.FieldSignature;
-import sootup.java.core.jimple.basic.JavaLocal;
 
 import java.util.ArrayList;
 import java.util.Collections;
